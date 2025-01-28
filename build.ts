@@ -14,11 +14,15 @@ import { writeBuildid2 } from "./scripts/update/buildid2";
 import { applyPatches } from "./scripts/git-patches/git-patches-manager";
 import { initializeBinGit } from "./scripts/git-patches/git-patches-manager";
 
+//? branding
+const brandingBaseName = "floorp";
+const brandingName = "Floorp";
+
 //? when the linux binary has published, I'll sync linux bin version
 const VERSION = process.platform === "win32" ? "001" : "000";
 const binExtractDir = "_dist/bin";
-const binDir = process.platform !== "darwin" ? "_dist/bin/noraneko"
-  : "_dist/bin/noraneko/Noraneko.app/Contents/Resources";
+const binDir = process.platform !== "darwin" ? `_dist/bin/${brandingBaseName}`
+  : `_dist/bin/${brandingBaseName}/${brandingName}.app/Contents/Resources`;
 
 const r = (dir: string) => {
   return path.resolve(import.meta.dirname, dir);
@@ -33,19 +37,17 @@ const isExists = async (path: string) => {
 
 const getBinArchive = async () => {
   if (process.platform === "win32") {
-    for await (const x of fs.glob("noraneko-*.win64.zip")) {
-      return x
-    }
+    return "floorp-win-amd64-moz-artifact.zip";
   } if (process.platform === "linux") {
     const arch = process.arch;
     if (arch === "arm64") {
-      return "noraneko-linux-aarch64-dev.zip";
+      return `${brandingBaseName}-linux-aarch64-dev.zip`;
     } if (arch === "x64") {
-      return "noraneko-linux-amd64-dev.zip";
+      return `${brandingBaseName}-linux-amd64-dev.zip`;
     }
   } else {
     if (process.platform === "darwin") {
-      return "noraneko-macOS-universal.dmg";
+      return `${brandingBaseName}-macOS-universal.dmg`;
     }
   }
   throw new Error("Unsupported platform/architecture");
@@ -58,10 +60,10 @@ try {
   await fs.rename("dist", "_dist");
 } catch {}
 
-const binPath = path.join(binDir, "noraneko");
+const binPath = path.join(binDir, brandingBaseName);
 const binPathExe = process.platform !== "darwin" ?
   binPath + (process.platform === "win32" ? ".exe" : ""):
-  "./_dist/bin/noraneko/Noraneko.app/Contents/MacOS/noraneko";
+  `./_dist/bin/${brandingBaseName}/${brandingName}.app/Contents/MacOS/${brandingBaseName}`;
 
 const binVersion = path.join(binDir, "nora.version.txt");
 
@@ -88,12 +90,12 @@ async function decompressBin() {
         binArchive,
       ]);
       await fs.mkdir(binDir, { recursive: true });
-      await execa("cp", ["-R", path.join(mountDir, "Noraneko.app"), path.join("./_dist/bin/noraneko", "")]);
+      await execa("cp", ["-R", path.join(mountDir, `${brandingName}.app`), path.join(`./_dist/bin/${brandingBaseName}`, "")]);
       await fs.writeFile(binVersion, VERSION);
       await execa("hdiutil", ["detach", mountDir]);
       await fs.rm(mountDir, { recursive: true });
-      await execa("chmod", ["-R", "777", `./_dist/bin/noraneko/Noraneko.app`]);
-      await execa("xattr", ["-rc", `./_dist/bin/noraneko/Noraneko.app`]);
+      await execa("chmod", ["-R", "777", `./_dist/bin/${brandingBaseName}/${brandingName}.app`]);
+      await execa("xattr", ["-rc", `./_dist/bin/${brandingBaseName}/${brandingName}.app`]);
     }
 
     if (process.platform === "linux") {
@@ -239,10 +241,10 @@ async function run(mode: "dev" | "test" | "release" = "dev") {
   } else {
     await release("before");
     try {
-        await fs.access("_dist/bin/noraneko/noraneko-dev");
-        await fs.rm("_dist/bin/noraneko/noraneko-dev", { recursive: true });
+        await fs.access(`_dist/bin/${brandingBaseName}/noraneko-dev`);
+        await fs.rm(`_dist/bin/${brandingBaseName}/noraneko-dev`, { recursive: true });
       } catch {}
-    await fs.symlink("../../noraneko","./_dist/bin/noraneko/noraneko-dev",process.platform==="win32" ? "junction" : undefined);
+    await fs.symlink(`../../${brandingBaseName}`,`./_dist/bin/${brandingBaseName}/noraneko-dev` ,process.platform==="win32" ? "junction" : undefined);
   }
 
 

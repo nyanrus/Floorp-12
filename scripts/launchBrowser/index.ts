@@ -1,13 +1,16 @@
 import { execa } from "execa";
 import chalk from "chalk";
 
+const brandingBaseName = "floorp";
+const brandingName = "Floorp";
+
 export async function runBrowser(port = 5180) {
   // https://wiki.mozilla.org/Firefox/CommandLineOptions
   const binPath = () => {
     if (process.platform !== "darwin") {
-      return `./_dist/bin/noraneko/noraneko${process.platform === "win32" ? ".exe" : ""} `
+      return `./_dist/bin/${brandingBaseName}/${brandingBaseName}${process.platform === "win32" ? ".exe" : ""} `
     }
-    return "./_dist/bin/noraneko/Noraneko.app/Contents/MacOS/noraneko";
+    return `./_dist/bin/${brandingBaseName}/${brandingName}.app/Contents/MacOS/${brandingBaseName}`;
   }
 
   const processBrowser = execa(

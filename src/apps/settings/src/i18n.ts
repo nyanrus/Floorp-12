@@ -18,7 +18,7 @@ i18n
     interpolation: {
       escapeValue: false,
       defaultVariables: {
-        productName: "Noraneko",
+        productName: "Floorp",
       },
     },
     react: {
