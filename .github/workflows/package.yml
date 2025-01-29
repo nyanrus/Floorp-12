@@ -100,7 +100,19 @@ jobs:
           sed -i 's|ac_add_options --enable-chrome-format=flat||g' ./mozconfig
 
           if [ "${{inputs.platform}}" == "macOS-x64" ]; then
-            echo "ac_add_options DMG_TOOL=$(pwd)/floorp/.github/workflows/tools/dmgtools" >> mozconfig
+            # Extract macOS .dmg tools
+            mkdir -p ~/tools
+            curl -L https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/ceSQWV1AS76UlhYJ0_PfJQ/artifacts/public/build/dmg.tar.zst -o dmg.tar.zst
+            tar -I zstd -xf dmg.tar.zst -C ~/tools
+            sudo chmod 777 ~/tools/dmg
+
+            curl -L https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/N2SwCRLrRw2l-UWP4N7dhQ/artifacts/public/build/hfsplus.tar.zst -o hfsplus.tar.zst
+            tar -I zstd -xf hfsplus.tar.zst -C ~/tools
+            sudo chmod 777 ~/tools/hfsplus
+
+            # write mozconfig
+            echo "DMG_TOOL=$(echo ~/tools/dmg/dmg)" >> mozconfig
+            echo "HFS_TOOL=$(echo ~/tools/hfsplus)" >> mozconfig
           fi
 
           ./mach configure
@@ -180,6 +192,7 @@ jobs:
           elif [ "${{inputs.platform}}" == "Linux-x64" ]; then
             OBJ_FOLDER=$(echo ./obj-x86_64-pc-linux-gnu)
           elif [ "${{inputs.platform}}" == "macOS-x64" ]; then
+            sudo chmod 777 executablefile ~/tools/dmg
             OBJ_FOLDER=$(echo ./obj-x86_64-apple-darwin)
           fi
 
