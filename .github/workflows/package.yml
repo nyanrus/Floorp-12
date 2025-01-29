@@ -112,7 +112,8 @@ jobs:
 
             # write mozconfig
             echo "DMG_TOOL=$(echo ~/tools/dmg/dmg)" >> mozconfig
-            echo "HFS_TOOL=$(echo ~/tools/hfsplus)" >> mozconfig
+            echo "HFS_TOOL=$(echo ~/tools/dmg/hfsplus)" >> mozconfig
+            echo "MKFSHFS=$(echo ~/tools/hfsplus/newfs_hfs)" >> mozconfig
           fi
 
           ./mach configure
