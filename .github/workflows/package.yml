@@ -67,7 +67,6 @@ jobs:
 
       - name: Write Versions
         run: |
-
           cd ./floorp
           pnpm build --write-version
           cd ..
@@ -99,6 +98,10 @@ jobs:
 
           sed -i 's|MOZ_BRANDING_DIRECTORY=browser/branding/unofficial|MOZ_BRANDING_DIRECTORY=browser/branding/floorp-official|g' ./browser/confvars.sh
           sed -i 's|ac_add_options --enable-chrome-format=flat||g' ./mozconfig
+
+          if [ "${{inputs.platform}}" == "macOS-x64" ]; then
+            echo "ac_add_options DMG_TOOL=$(pwd)/floorp/.github/workflows/tools/dmgtools" >> mozconfig
+          fi
 
           ./mach configure
           git apply --ignore-space-change --ignore-whitespace .github/patches/packaging/*.patch
@@ -140,12 +143,18 @@ jobs:
           if [ "${{inputs.platform}}" == "Windows-x64" ]; then
             zip -r ~/artifacts/moz-artifact-win64.zip ./*
           elif [ "${{inputs.platform}}" == "Linux-x64" ]; then
-            tar -cJf ~/artifacts/moz-artifact-linux64.tar.xz ./*
+            tar -cjf ~/artifacts/moz-artifact-linux64.tar.bz2 ./*
           else
             cp -r ~/downloads/* ~/artifacts
           fi
 
           cd $GITHUB_WORKSPACE
+
+      - name: upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: moz-artifact
+          path: ~/artifacts
 
       - name: Build Floorp
         run: |
@@ -158,7 +167,7 @@ jobs:
           if [ "${{inputs.platform}}" == "Windows-x64" ]; then
             MOZ_ARTIFACT_FILE=$(echo ~/artifacts/moz-artifact-win64.zip) ./mach build
           elif [ "${{inputs.platform}}" == "Linux-x64" ]; then
-            MOZ_ARTIFACT_FILE=$(echo ~/artifacts/moz-artifact-linux64.tar.xz) ./mach build
+            MOZ_ARTIFACT_FILE=$(echo ~/artifacts/moz-artifact-linux64.tar.bz2) ./mach build
           elif [ "${{inputs.platform}}" == "macOS-x64" ]; then
             MOZ_ARTIFACT_FILE=$(echo ~/artifacts/floorp-macOS-universal-moz-artifact.dmg) ./mach build
           fi
