@@ -41,13 +41,13 @@ const getBinArchive = async () => {
   } if (process.platform === "linux") {
     const arch = process.arch;
     if (arch === "arm64") {
-      return `${brandingBaseName}-linux-aarch64-dev.zip`;
+      return `${brandingBaseName}-linux-amd64-moz-artifact.zip`;
     } if (arch === "x64") {
-      return `${brandingBaseName}-linux-amd64-dev.zip`;
+      return `${brandingBaseName}-linux-amd64-moz-artifact.zip`;
     }
   } else {
     if (process.platform === "darwin") {
-      return `${brandingBaseName}-macOS-universal.dmg`;
+      return `${brandingBaseName}-mac-universal-moz-artifact.zip`;
     }
   }
   throw new Error("Unsupported platform/architecture");
@@ -81,13 +81,18 @@ async function decompressBin() {
       await fs.writeFile(binVersion, VERSION);
     } else {
       //? macOS
+      // extract zip to get .dmg
+      const tempDir = "_dist/dmgTemp";
+      await fs.mkdir(tempDir, { recursive: true });
+      new AdmZip(binArchive).extractAllTo(tempDir);
+
       const mountDir = "_dist/mount";
       await fs.mkdir(mountDir, { recursive: true });
       await execa("hdiutil", [
         "attach",
         "-mountpoint",
         mountDir,
-        binArchive,
+        "_dist/dmgTemp/*.dmg",
       ]);
       await fs.mkdir(binDir, { recursive: true });
       await execa("cp", ["-R", path.join(mountDir, `${brandingName}.app`), path.join(`./_dist/bin/${brandingBaseName}`, "")]);

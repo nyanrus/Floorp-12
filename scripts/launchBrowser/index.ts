@@ -8,14 +8,19 @@ export async function runBrowser(port = 5180) {
   // https://wiki.mozilla.org/Firefox/CommandLineOptions
   const binPath = () => {
     if (process.platform !== "darwin") {
-      return `./_dist/bin/${brandingBaseName}/${brandingBaseName}${process.platform === "win32" ? ".exe" : ""} `
+      return `./_dist/bin/${brandingBaseName}/${brandingBaseName}${process.platform === "win32" ? ".exe" : ""}`;
     }
     return `./_dist/bin/${brandingBaseName}/${brandingName}.app/Contents/MacOS/${brandingBaseName}`;
   }
 
-  const processBrowser = execa(
-    {},
-  )`${binPath()} --profile ./_dist/profile/test --remote-debugging-port ${port} --wait-for-browser --jsdebugger`;
+  const processBrowser = execa(binPath(), [
+    "--profile",
+    "./_dist/profile/test",
+    "--remote-debugging-port",
+    port.toString(),
+    "--wait-for-browser",
+    "--jsdebugger",
+  ]);
 
   const stdout = processBrowser.readable({ from: "stdout" });
   const stderr = processBrowser.readable({ from: "stderr" });
