@@ -74,8 +74,14 @@ jobs:
 
       - name: Mach configure
         run: |
+          if [ "${{inputs.platform}}" == "Windows-x64" ]; then
+            cp ./.github/workflows/mozconfigs/win64.mozconfig mozconfig
+          elif [ "${{inputs.platform}}" == "Linux-x64" ]; then
+            cp ./.github/workflows/mozconfigs/linux64.mozconfig mozconfig
+          else
+            cp ./.github/workflows/mozconfigs/macosx64-x86_64.mozconfig mozconfig
+          fi
 
-          cp ./.github/workflows/mozconfigs/win64.mozconfig mozconfig
           # Copy Noraneko Branding
           cp -r ./floorp/gecko/branding/* ./browser/branding/
 
@@ -107,12 +113,38 @@ jobs:
           repository: Floorp-Projects/Floorp-12-runtime
           path: ~/downloads
 
-      - name: Compress downloaded artifact
-        if: ${{inputs.platform == 'Windows-x64'}}
+      - name: Download artifact for Linux
+        if: ${{inputs.platform == 'Linux-x64'}}
+        uses: actions/download-artifact@v4
+        with:
+          name: 'floorp-linux-amd64-moz-artifact'
+          run-id: ${{inputs.runtime_artifact_workflow_run_id}}
+          github-token: ${{github.token}}
+          repository: Floorp-Projects/Floorp-12-runtime
+          path: ~/downloads
+
+      - name: Download artifact for macOS
+        if: ${{inputs.platform == 'macOS-x64'}}
+        uses: actions/download-artifact@v4
+        with:
+          name: 'floorp-mac-universal-moz-artifact'
+          run-id: ${{inputs.runtime_artifact_workflow_run_id}}
+          github-token: ${{github.token}}
+          repository: Floorp-Projects/Floorp-12-runtime
+          path: ~/downloads
+
+      - name: Make Downloaded Artifact to Moz Artifact
         run: |
           mkdir -p ~/artifacts
           cd ~/downloads
-          zip -r ~/artifacts/moz-artifact.win64.zip ./*
+          if [ "${{inputs.platform}}" == "Windows-x64" ]; then
+            zip -r ~/artifacts/moz-artifact-win64.zip ./*
+          elif [ "${{inputs.platform}}" == "Linux-x64" ]; then
+            tar -cJf ~/artifacts/moz-artifact-linux64.tar.xz ./*
+          else
+            cp -r ~/downloads/* ~/artifacts
+          fi
+
           cd $GITHUB_WORKSPACE
 
       - name: Build Floorp
@@ -123,20 +155,34 @@ jobs:
 
       - name: Build
         run: |
-          MOZ_ARTIFACT_FILE=$(echo ~/artifacts/moz-artifact.win64.zip) ./mach build
+          if [ "${{inputs.platform}}" == "Windows-x64" ]; then
+            MOZ_ARTIFACT_FILE=$(echo ~/artifacts/moz-artifact-win64.zip) ./mach build
+          elif [ "${{inputs.platform}}" == "Linux-x64" ]; then
+            MOZ_ARTIFACT_FILE=$(echo ~/artifacts/moz-artifact-linux64.tar.xz) ./mach build
+          elif [ "${{inputs.platform}}" == "macOS-x64" ]; then
+            MOZ_ARTIFACT_FILE=$(echo ~/artifacts/floorp-macOS-universal-moz-artifact.dmg) ./mach build
+          fi
 
       - name: Inject Floorp
         run: |
+          # obj folder name
+          if [ "${{inputs.platform}}" == "Windows-x64" ]; then
+            OBJ_FOLDER=$(echo ./obj-x86_64-pc-windows-msvc)
+          elif [ "${{inputs.platform}}" == "Linux-x64" ]; then
+            OBJ_FOLDER=$(echo ./obj-x86_64-pc-linux-gnu)
+          elif [ "${{inputs.platform}}" == "macOS-x64" ]; then
+            OBJ_FOLDER=$(echo ./obj-x86_64-apple-darwin)
+          fi
 
           cd ./floorp
           pnpm build --release-build-after
 
           # https://www.spinics.net/lists/git/msg391750.html
-          rsync -aL ../obj-x86_64-pc-windows-msvc/dist/bin/ ../obj-x86_64-pc-windows-msvc/dist/tmp__bin
-          rm -rf ../obj-x86_64-pc-windows-msvc/dist/bin
-          mv ../obj-x86_64-pc-windows-msvc/dist/tmp__bin ../obj-x86_64-pc-windows-msvc/dist/bin
+          rsync -aL $OBJ_FOLDER/dist/bin/ $OBJ_FOLDER/dist/tmp__bin
+          rm -rf $OBJ_FOLDER/dist/bin
+          mv $OBJ_FOLDER/dist/tmp__bin $OBJ_FOLDER/dist/bin
 
-          git apply --reject ./scripts/git-patches/patches/*.patch --directory ../obj-x86_64-pc-windows-msvc/dist/bin --unsafe-paths --check --apply
+          git apply --reject ./scripts/git-patches/patches/*.patch --directory ../$OBJ_FOLDER/dist/bin --unsafe-paths --check --apply
           cd ..
 
       - name: Package noraneko
@@ -196,17 +242,11 @@ jobs:
 
       #     cp ~/noraneko-mar/*.mar ~/noraneko-publish
 
-      - name: Publish Package 🎁
-        uses: actions/upload-artifact@v4
-        with:
-          name: noraneko-win-amd64-moz-artifact
-          path: obj-x86_64-pc-windows-msvc/dist/floorp-*.zip
-
       - name: Publish Installer 🎁
         uses: actions/upload-artifact@v4
         with:
           name: noraneko-win-amd64-installer
-          path: obj-x86_64-pc-windows-msvc/dist/install/sea/*
+          path: obj-*/dist/install/sea/*
 
       # - name: Publish MAR 🎁
       #   uses: actions/upload-artifact@v4
