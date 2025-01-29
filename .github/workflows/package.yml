@@ -119,9 +119,9 @@ jobs:
           NODE_ENV='production' pnpm build --release-build-before
           cd ..
 
-      - name: build
+      - name: Build
         run: |
-          MOZ_ARTIFACT_FILE=$(echo ~/moz-artifact.win64.zip) ./mach build
+          MOZ_ARTIFACT_FILE=$(echo ~/artifacts/moz-artifact.win64.zip) ./mach build
 
       - name: Inject Floorp
         run: |
