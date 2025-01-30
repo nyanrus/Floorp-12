@@ -143,7 +143,7 @@ jobs:
         if: ${{inputs.platform == 'macOS-x64'}}
         uses: actions/download-artifact@v4
         with:
-          name: 'floorp-mac-universal-moz-artifact'
+          name: 'floorp-mac-universal-moz-artifact-release'
           run-id: ${{inputs.runtime_artifact_workflow_run_id}}
           github-token: ${{github.token}}
           repository: Floorp-Projects/Floorp-12-runtime
@@ -182,7 +182,7 @@ jobs:
           elif [ "${{inputs.platform}}" == "Linux-x64" ]; then
             MOZ_ARTIFACT_FILE=$(echo ~/artifacts/moz-artifact-linux64.tar.bz2) ./mach build
           elif [ "${{inputs.platform}}" == "macOS-x64" ]; then
-            MOZ_ARTIFACT_FILE=$(echo ~/artifacts/floorp-macOS-universal-moz-artifact.dmg) ./mach build
+            MOZ_ARTIFACT_FILE=$(echo ~/artifacts/floorp-macOS-universal-moz-artifact-release.dmg) ./mach build
           fi
 
       - name: Inject Floorp
