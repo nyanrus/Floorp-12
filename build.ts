@@ -377,7 +377,7 @@ async function release(mode: "before" | "after") {
     })`pnpm genJarManifest`;
     await injectManifest("./_dist", false);
   } else if (mode === "after") {
-    const binPath = "../obj-x86_64-pc-windows-msvc/dist/bin";
+    const binPath = "../obj-artifact-build-output/dist/bin";
     injectXHTML(binPath);
     let buildid2: string | null = null;
     try {

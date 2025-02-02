@@ -95,6 +95,7 @@ jobs:
           echo "ac_add_options --enable-release" >> mozconfig
           echo "ac_add_options --enable-update-channel=alpha" >> mozconfig
           echo "ac_add_options --enable-artifact-builds" >> mozconfig
+          echo "mk_add_options MOZ_OBJDIR=./obj-artifact-build-output" >> mozconfig
 
           sed -i 's|MOZ_BRANDING_DIRECTORY=browser/branding/unofficial|MOZ_BRANDING_DIRECTORY=browser/branding/floorp-official|g' ./browser/confvars.sh
           sed -i 's|ac_add_options --enable-chrome-format=flat||g' ./mozconfig
@@ -114,6 +115,7 @@ jobs:
             echo "DMG_TOOL=$(echo ~/tools/dmg/dmg)" >> mozconfig
             echo "HFS_TOOL=$(echo ~/tools/dmg/hfsplus)" >> mozconfig
             echo "MKFSHFS=$(echo ~/tools/hfsplus/newfs_hfs)" >> mozconfig
+            echo "ac_add_options --disable-tests" >> mozconfig
           fi
 
           ./mach configure
@@ -182,30 +184,20 @@ jobs:
           elif [ "${{inputs.platform}}" == "Linux-x64" ]; then
             MOZ_ARTIFACT_FILE=$(echo ~/artifacts/moz-artifact-linux64.tar.bz2) ./mach build
           elif [ "${{inputs.platform}}" == "macOS-x64" ]; then
-            MOZ_ARTIFACT_FILE=$(echo ~/artifacts/floorp-macOS-universal-moz-artifact-release.dmg) ./mach build
+            MOZ_ARTIFACT_FILE="$(echo ~/artifacts/floorp-macOS-universal-moz-artifact-release.dmg):$(echo ~/artifacts/floorp-macOS.update_framework_artifacts.zip)" ./mach build
           fi
 
       - name: Inject Floorp
         run: |
-          # obj folder name
-          if [ "${{inputs.platform}}" == "Windows-x64" ]; then
-            OBJ_FOLDER=$(echo ./obj-x86_64-pc-windows-msvc)
-          elif [ "${{inputs.platform}}" == "Linux-x64" ]; then
-            OBJ_FOLDER=$(echo ./obj-x86_64-pc-linux-gnu)
-          elif [ "${{inputs.platform}}" == "macOS-x64" ]; then
-            sudo chmod 777 executablefile ~/tools/dmg
-            OBJ_FOLDER=$(echo ./obj-x86_64-apple-darwin)
-          fi
-
           cd ./floorp
           pnpm build --release-build-after
 
           # https://www.spinics.net/lists/git/msg391750.html
-          rsync -aL $OBJ_FOLDER/dist/bin/ $OBJ_FOLDER/dist/tmp__bin
-          rm -rf $OBJ_FOLDER/dist/bin
-          mv $OBJ_FOLDER/dist/tmp__bin $OBJ_FOLDER/dist/bin
+          rsync -aL ../obj-artifact-build-output/dist/bin/ ../obj-artifact-build-output/dist/tmp__bin
+          rm -rf ../obj-artifact-build-output/dist/bin
+          mv ../obj-artifact-build-output/dist/tmp__bin ../obj-artifact-build-output/dist/bin
 
-          git apply --reject ./scripts/git-patches/patches/*.patch --directory ../$OBJ_FOLDER/dist/bin --unsafe-paths --check --apply
+          git apply --reject ./scripts/git-patches/patches/*.patch --directory ../obj-artifact-build-output/dist/bin --unsafe-paths --check --apply
           cd ..
 
       - name: Package noraneko
@@ -265,11 +257,12 @@ jobs:
 
       #     cp ~/noraneko-mar/*.mar ~/noraneko-publish
 
-      - name: Publish Installer 🎁
+      - name: Publish dist 🎁
         uses: actions/upload-artifact@v4
         with:
           name: noraneko-win-amd64-installer
-          path: obj-*/dist/install/sea/*
+          path: obj-*/dist/
+          compression-level: 9
 
       # - name: Publish MAR 🎁
       #   uses: actions/upload-artifact@v4
