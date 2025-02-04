@@ -36,19 +36,17 @@ const isExists = async (path: string) => {
 };
 
 const getBinArchive = async () => {
+  const arch = process.arch;
   if (process.platform === "win32") {
-    return "floorp-win-amd64-moz-artifact.zip";
-  } if (process.platform === "linux") {
-    const arch = process.arch;
-    if (arch === "arm64") {
-      return `${brandingBaseName}-linux-amd64-moz-artifact.zip`;
-    } if (arch === "x64") {
-      return `${brandingBaseName}-linux-amd64-moz-artifact.zip`;
+    return `${brandingBaseName}-win-amd64-moz-artifact.zip`;
+  } else if (process.platform === "linux") {
+    if (arch === "x64") {
+      return `${brandingBaseName}-linux-amd64-moz-artifact-dev.zip`;
+    } else if (arch === "arm64") {
+      return `${brandingBaseName}-linux-arm64-moz-artifact-dev.zip`;
     }
-  } else {
-    if (process.platform === "darwin") {
-      return `${brandingBaseName}-mac-universal-moz-artifact.zip`;
-    }
+  } else if (process.platform === "darwin") {
+    return `${brandingBaseName}-mac-universal-moz-artifact-dev.zip`;
   }
   throw new Error("Unsupported platform/architecture");
 };

@@ -8,6 +8,7 @@ on:
     inputs:
       platform:
         type: choice
+        required: true
         default: Windows-x64
         options:
           - Windows-x64
@@ -15,16 +16,19 @@ on:
           - macOS-x64
       runtime_artifact_workflow_run_id:
         type: string
-        required: true
+        default: ""
+        required: false
 
   workflow_call:
     inputs:
       platform:
         type: string
         default: Windows-x64
+        required: true
       runtime_artifact_workflow_run_id:
         type: string
-        required: true
+        default: ""
+        required: false
 
 run-name: 📦️ Package ${{ inputs.platform }}
 jobs:
@@ -94,6 +98,7 @@ jobs:
 
           echo "ac_add_options --enable-release" >> mozconfig
           echo "ac_add_options --enable-update-channel=alpha" >> mozconfig
+          echo "ac_add_options --disable-tests" >> mozconfig
           echo "ac_add_options --enable-artifact-builds" >> mozconfig
           echo "mk_add_options MOZ_OBJDIR=./obj-artifact-build-output" >> mozconfig
 
@@ -115,38 +120,44 @@ jobs:
             echo "DMG_TOOL=$(echo ~/tools/dmg/dmg)" >> mozconfig
             echo "HFS_TOOL=$(echo ~/tools/dmg/hfsplus)" >> mozconfig
             echo "MKFSHFS=$(echo ~/tools/hfsplus/newfs_hfs)" >> mozconfig
-            echo "ac_add_options --disable-tests" >> mozconfig
           fi
 
           ./mach configure
           git apply --ignore-space-change --ignore-whitespace .github/patches/packaging/*.patch
 
-      - name: Download artifact for Windows
-        if: ${{inputs.platform == 'Windows-x64'}}
-        uses: actions/download-artifact@v4
-        with:
-          name: 'floorp-win-amd64-moz-artifact'
-          run-id: ${{inputs.runtime_artifact_workflow_run_id}}
-          github-token: ${{github.token}}
-          repository: Floorp-Projects/Floorp-12-runtime
-          path: ~/downloads
+      - name: Possibly retrieve run ID if not provided
+        run: |
+          if [ -z "${{ inputs.runtime_artifact_workflow_run_id }}" ]; then
+            case "${{ inputs.platform }}" in
+              "Linux-x64") workflow_file="wrapper_linux_build.yml" ;;
+              "Windows-x64") workflow_file="wrapper_windows_build.yml" ;;
+              "macOS-x64") workflow_file="wrapper_mac_build.yml" ;;
+            esac
 
-      - name: Download artifact for Linux
-        if: ${{inputs.platform == 'Linux-x64'}}
-        uses: actions/download-artifact@v4
-        with:
-          name: 'floorp-linux-amd64-moz-artifact'
-          run-id: ${{inputs.runtime_artifact_workflow_run_id}}
-          github-token: ${{github.token}}
-          repository: Floorp-Projects/Floorp-12-runtime
-          path: ~/downloads
+            LATEST_ID=$(curl -s \
+              -H "Accept: application/vnd.github+json" \
+              -H "Authorization: Bearer ${{ secrets.PAT }}" \
+              "https://api.github.com/repos/Floorp-Projects/Floorp-12-runtime/actions/workflows/$workflow_file/runs?branch=main&status=success" \
+            | jq -r '.workflow_runs[0].id')
 
-      - name: Download artifact for macOS
-        if: ${{inputs.platform == 'macOS-x64'}}
+            echo "RUNTIME_ARTIFACT_WORKFLOW_RUN_ID=$LATEST_ID" >> $GITHUB_ENV
+          else
+            echo "RUNTIME_ARTIFACT_WORKFLOW_RUN_ID=${{ inputs.runtime_artifact_workflow_run_id }}" >> $GITHUB_ENV
+          fi
+
+      - name: Get Artifact Name
+        run: |
+          case "${{ inputs.platform }}" in
+            "Windows-x64") echo "ARTIFACT_NAME=floorp-win-amd64-moz-artifact" >> $GITHUB_ENV ;;
+            "Linux-x64") echo "ARTIFACT_NAME=floorp-linux-amd64-moz-artifact-release" >> $GITHUB_ENV ;;
+            "macOS-x64") echo "ARTIFACT_NAME=floorp-mac-universal-moz-artifact-release" >> $GITHUB_ENV ;;
+          esac
+
+      - name: Download mozilla artifact
         uses: actions/download-artifact@v4
         with:
-          name: 'floorp-mac-universal-moz-artifact-release'
-          run-id: ${{inputs.runtime_artifact_workflow_run_id}}
+          name: ${{ env.ARTIFACT_NAME }}
+          run-id: ${{ env.RUNTIME_ARTIFACT_WORKFLOW_RUN_ID }}
           github-token: ${{github.token}}
           repository: Floorp-Projects/Floorp-12-runtime
           path: ~/downloads
@@ -157,19 +168,11 @@ jobs:
           cd ~/downloads
           if [ "${{inputs.platform}}" == "Windows-x64" ]; then
             zip -r ~/artifacts/moz-artifact-win64.zip ./*
-          elif [ "${{inputs.platform}}" == "Linux-x64" ]; then
-            tar -cjf ~/artifacts/moz-artifact-linux64.tar.bz2 ./*
           else
             cp -r ~/downloads/* ~/artifacts
           fi
 
           cd $GITHUB_WORKSPACE
-
-      - name: upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: moz-artifact
-          path: ~/artifacts
 
       - name: Build Floorp
         run: |
@@ -182,7 +185,7 @@ jobs:
           if [ "${{inputs.platform}}" == "Windows-x64" ]; then
             MOZ_ARTIFACT_FILE=$(echo ~/artifacts/moz-artifact-win64.zip) ./mach build
           elif [ "${{inputs.platform}}" == "Linux-x64" ]; then
-            MOZ_ARTIFACT_FILE=$(echo ~/artifacts/moz-artifact-linux64.tar.bz2) ./mach build
+            MOZ_ARTIFACT_FILE=$(echo ~/artifacts/floorp-linux-amd64-moz-artifact-release.tar.xz) ./mach build
           elif [ "${{inputs.platform}}" == "macOS-x64" ]; then
             MOZ_ARTIFACT_FILE="$(echo ~/artifacts/floorp-macOS-universal-moz-artifact-release.dmg):$(echo ~/artifacts/floorp-macOS.update_framework_artifacts.zip)" ./mach build
           fi
@@ -204,58 +207,56 @@ jobs:
         run: |
           ./mach package
 
-      # - name: Download artifact of MAR tools
-      #   uses: actions/download-artifact@v4
-      #   with:
-      #     name: ${{'noraneko-dist-host'}}
-      #     run-id: ${{inputs.runtime_artifact_workflow_run_id}}
-      #     github-token: ${{github.token}}
-      #     repository: ${{github.repository}}-runtime
-      #     path: obj-x86_64-pc-windows-msvc/dist/host
+      - name: Download artifact of MAR tools
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{'dist-host'}}
+          run-id: ${{ env.RUNTIME_ARTIFACT_WORKFLOW_RUN_ID }}
+          github-token: ${{github.token}}
+          repository: Floorp-Projects/Floorp-12-runtime
+          path: obj-artifact-build-output/dist/host
 
-      # - name: Download artifact of binary for getting buildid
-      #   uses: actions/download-artifact@v4
-      #   with:
-      #     name: ${{'noraneko-win-amd64-dev'}}
-      #     run-id: ${{inputs.runtime_artifact_workflow_run_id}}
-      #     github-token: ${{github.token}}
-      #     repository: ${{github.repository}}-runtime
-      #     path: ~/noraneko-dev
+      - name: Download artifact of binary for getting build information
+        uses: actions/download-artifact@v4
+        with:
+          name: application-ini
+          run-id: ${{ env.RUNTIME_ARTIFACT_WORKFLOW_RUN_ID }}
+          github-token: ${{github.token}}
+          repository: Floorp-Projects/Floorp-12-runtime
+          path: ~/noraneko-dev
 
-      # - name: Create MAR package
-      #   run: |
-      #     7za x "$(echo ~/noraneko-dev/noraneko-*.win64.zip)" -o"$(echo ~)/noraneko-dev"
+      - name: Create MAR package
+        run: |
+          chmod +x $(echo ./obj-*)/dist/host/bin/mar
+          mkdir ~/noraneko-mar
 
-      #     chmod +x $(echo ./obj-*)/dist/host/bin/mar
-      #     mkdir ~/noraneko-mar
+          awk -F "=" '/^Version/ {print $2}' "$(echo ~)/noraneko-dev/nora-application.ini" > ~/noraneko-mar/version.txt
 
-      #     awk -F "=" '/^Version/ {print $2}' "$(echo ~)/noraneko-dev/noraneko/application.ini" > ~/noraneko-mar/version.txt
+          touch "$(echo ./obj-*)/dist/floorp/precomplete"
+          MAR="$(echo ./obj-*)/dist/host/bin/mar" MOZ_PRODUCT_VERSION=$(cat ~/noraneko-mar/version.txt) MAR_CHANNEL_ID=alpha ./tools/update-packaging/make_full_update.sh ~/noraneko-mar/noraneko-win-amd64-full.mar "$(echo ./obj-*)/dist/floorp"
 
-      #     touch "$(echo ./obj-*)/dist/noraneko/precomplete"
-      #     MAR="$(echo ./obj-*)/dist/host/bin/mar" MOZ_PRODUCT_VERSION=$(cat ~/noraneko-mar/version.txt) MAR_CHANNEL_ID=alpha ./tools/update-packaging/make_full_update.sh ~/noraneko-mar/noraneko-win-amd64-full.mar "$(echo ./obj-*)/dist/noraneko"
+          cp floorp/gecko/config/version.txt ~/noraneko-mar/noraneko_version.txt
+          cp floorp/_dist/buildid2 ~/noraneko-mar/noraneko_buildid.txt
+          echo "$(cat ~/noraneko-mar/version.txt)@$(cat ~/noraneko-mar/noraneko_version.txt)" > ~/noraneko-mar/version_display.txt
 
-      #     cp noraneko/gecko/config/version.txt ~/noraneko-mar/noraneko_version.txt
-      #     cp noraneko/_dist/buildid2 ~/noraneko-mar/noraneko_buildid.txt
-      #     echo "$(cat ~/noraneko-mar/version.txt)@$(cat ~/noraneko-mar/noraneko_version.txt)" > ~/noraneko-mar/version_display.txt
+          shasum --algorithm 512 ~/noraneko-mar/noraneko-win-amd64-full.mar | cut -c 1-128 > ~/noraneko-mar/mar_shasum.txt
+          stat --format "%s" ~/noraneko-mar/noraneko-win-amd64-full.mar > ~/noraneko-mar/mar_size.txt
 
-      #     shasum --algorithm 512 ~/noraneko-mar/noraneko-win-amd64-full.mar | cut -c 1-128 > ~/noraneko-mar/mar_shasum.txt
-      #     stat --format "%s" ~/noraneko-mar/noraneko-win-amd64-full.mar > ~/noraneko-mar/mar_size.txt
+          awk -F "=" '/BuildID/ {print $2}' "$(echo ~)/noraneko-dev/nora-application.ini" > ~/noraneko-mar/buildid.txt
 
-      #     awk -F "=" '/BuildID/ {print $2}' "$(echo ~)/noraneko-dev/noraneko/application.ini" > ~/noraneko-mar/buildid.txt
+          mkdir ~/noraneko-publish
 
-      #     mkdir ~/noraneko-publish
+          echo "{" >> ~/noraneko-publish/meta.json
+          echo "\"version_display\":\"$(cat ~/noraneko-mar/version_display.txt)\"," >> ~/noraneko-publish/meta.json
+          echo "\"version\":\"$(cat ~/noraneko-mar/version.txt)\"," >> ~/noraneko-publish/meta.json
+          echo "\"noraneko_version\":\"$(cat ~/noraneko-mar/noraneko_version.txt)\"," >> ~/noraneko-publish/meta.json
+          echo "\"noraneko_buildid\":\"$(cat ~/noraneko-mar/noraneko_buildid.txt)\"," >> ~/noraneko-publish/meta.json
+          echo "\"mar_size\":\"$(cat ~/noraneko-mar/mar_size.txt)\"," >> ~/noraneko-publish/meta.json
+          echo "\"mar_shasum\":\"$(cat ~/noraneko-mar/mar_shasum.txt)\"," >> ~/noraneko-publish/meta.json
+          echo "\"buildid\":\"$(cat ~/noraneko-mar/buildid.txt)\"" >> ~/noraneko-publish/meta.json
+          echo "}" >> ~/noraneko-publish/meta.json
 
-      #     echo "{" >> ~/noraneko-publish/meta.json
-      #     echo "\"version_display\":\"$(cat ~/noraneko-mar/version_display.txt)\"," >> ~/noraneko-publish/meta.json
-      #     echo "\"version\":\"$(cat ~/noraneko-mar/version.txt)\"," >> ~/noraneko-publish/meta.json
-      #     echo "\"noraneko_version\":\"$(cat ~/noraneko-mar/noraneko_version.txt)\"," >> ~/noraneko-publish/meta.json
-      #     echo "\"noraneko_buildid\":\"$(cat ~/noraneko-mar/noraneko_buildid.txt)\"," >> ~/noraneko-publish/meta.json
-      #     echo "\"mar_size\":\"$(cat ~/noraneko-mar/mar_size.txt)\"," >> ~/noraneko-publish/meta.json
-      #     echo "\"mar_shasum\":\"$(cat ~/noraneko-mar/mar_shasum.txt)\"," >> ~/noraneko-publish/meta.json
-      #     echo "\"buildid\":\"$(cat ~/noraneko-mar/buildid.txt)\"" >> ~/noraneko-publish/meta.json
-      #     echo "}" >> ~/noraneko-publish/meta.json
-
-      #     cp ~/noraneko-mar/*.mar ~/noraneko-publish
+          cp ~/noraneko-mar/*.mar ~/noraneko-publish
 
       - name: Publish dist 🎁
         uses: actions/upload-artifact@v4
@@ -264,8 +265,8 @@ jobs:
           path: obj-*/dist/
           compression-level: 9
 
-      # - name: Publish MAR 🎁
-      #   uses: actions/upload-artifact@v4
-      #   with:
-      #     name: noraneko-win-amd64-mar-full
-      #     path: ~/noraneko-publish/*
+      - name: Publish MAR 🎁
+        uses: actions/upload-artifact@v4
+        with:
+          name: noraneko-win-amd64-mar-full
+          path: ~/noraneko-publish/*
