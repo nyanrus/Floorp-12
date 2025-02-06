@@ -147,11 +147,20 @@ jobs:
 
       - name: Get Artifact Name
         run: |
-          case "${{ inputs.platform }}" in
-            "Windows-x64") echo "ARTIFACT_NAME=floorp-win-amd64-moz-artifact" >> $GITHUB_ENV ;;
-            "Linux-x64") echo "ARTIFACT_NAME=floorp-linux-amd64-moz-artifact-release" >> $GITHUB_ENV ;;
-            "macOS-x64") echo "ARTIFACT_NAME=floorp-mac-universal-moz-artifact-release" >> $GITHUB_ENV ;;
-          esac
+            case "${{ inputs.platform }}" in
+            "Windows-x64")
+              echo "ARTIFACT_NAME=floorp-win-amd64-moz-artifact" >> $GITHUB_ENV
+              echo "OUTPUT_NAME=win-amd64" >> $GITHUB_ENV
+              ;;
+            "Linux-x64")
+              echo "ARTIFACT_NAME=floorp-linux-amd64-moz-artifact-release" >> $GITHUB_ENV
+              echo "OUTPUT_NAME=linux-amd64" >> $GITHUB_ENV
+              ;;
+            "macOS-x64")
+              echo "ARTIFACT_NAME=floorp-mac-universal-moz-artifact-release" >> $GITHUB_ENV
+              echo "OUTPUT_NAME=mac-universal" >> $GITHUB_ENV
+              ;;
+            esac
 
       - name: Download mozilla artifact
         uses: actions/download-artifact@v4
@@ -233,14 +242,14 @@ jobs:
           awk -F "=" '/^Version/ {print $2}' "$(echo ~)/noraneko-dev/nora-application.ini" > ~/noraneko-mar/version.txt
 
           touch "$(echo ./obj-*)/dist/floorp/precomplete"
-          MAR="$(echo ./obj-*)/dist/host/bin/mar" MOZ_PRODUCT_VERSION=$(cat ~/noraneko-mar/version.txt) MAR_CHANNEL_ID=alpha ./tools/update-packaging/make_full_update.sh ~/noraneko-mar/noraneko-win-amd64-full.mar "$(echo ./obj-*)/dist/floorp"
+          MAR="$(echo ./obj-*)/dist/host/bin/mar" MOZ_PRODUCT_VERSION=$(cat ~/noraneko-mar/version.txt) MAR_CHANNEL_ID=alpha ./tools/update-packaging/make_full_update.sh ~/noraneko-mar/noraneko-${{ env.OUTPUT_NAME }}-full.mar "$(echo ./obj-*)/dist/floorp"
 
           cp floorp/gecko/config/version.txt ~/noraneko-mar/noraneko_version.txt
           cp floorp/_dist/buildid2 ~/noraneko-mar/noraneko_buildid.txt
           echo "$(cat ~/noraneko-mar/version.txt)@$(cat ~/noraneko-mar/noraneko_version.txt)" > ~/noraneko-mar/version_display.txt
 
-          shasum --algorithm 512 ~/noraneko-mar/noraneko-win-amd64-full.mar | cut -c 1-128 > ~/noraneko-mar/mar_shasum.txt
-          stat --format "%s" ~/noraneko-mar/noraneko-win-amd64-full.mar > ~/noraneko-mar/mar_size.txt
+          shasum --algorithm 512 ~/noraneko-mar/noraneko-${{ env.OUTPUT_NAME }}-full.mar | cut -c 1-128 > ~/noraneko-mar/mar_shasum.txt
+          stat --format "%s" ~/noraneko-mar/noraneko-${{ env.OUTPUT_NAME }}-full.mar > ~/noraneko-mar/mar_size.txt
 
           awk -F "=" '/BuildID/ {print $2}' "$(echo ~)/noraneko-dev/nora-application.ini" > ~/noraneko-mar/buildid.txt
 
@@ -261,12 +270,12 @@ jobs:
       - name: Publish dist 🎁
         uses: actions/upload-artifact@v4
         with:
-          name: noraneko-win-amd64-installer
+          name: noraneko-${{ env.OUTPUT_NAME }}-installer
           path: obj-*/dist/
           compression-level: 9
 
       - name: Publish MAR 🎁
         uses: actions/upload-artifact@v4
         with:
-          name: noraneko-win-amd64-mar-full
+          name: noraneko-${{ env.OUTPUT_NAME }}-mar-full
           path: ~/noraneko-publish/*
