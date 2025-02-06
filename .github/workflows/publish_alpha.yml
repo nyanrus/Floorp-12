@@ -99,13 +99,13 @@ jobs:
       - name: Setup
         run: |
           pnpm i
-
           sudo apt install jq
+          node --import @swc-node/register/esm-register ./scripts/update/xml.ts ~/noraneko-publish/win/meta.json ~/noraneko-publish/win/WINNT_x86_64-msvc-x64.update.xml
+          node --import @swc-node/register/esm-register ./scripts/update/xml.ts ~/noraneko-publish/linux/meta.json ~/noraneko-publish/linux/Linux_x86_64.update.xml
+          node --import @swc-node/register/esm-register ./scripts/update/xml.ts ~/noraneko-publish/mac/meta.json ~/noraneko-publish/mac/Darwin_x86_64.update.xml
 
-          node --import @swc-node/register/esm-register ./scripts/update/xml.ts ~/noraneko-publish/meta.json ~/noraneko-publish/WINNT_x86_64-msvc-x64.update.xml
-
-          echo "VERSION=$(cat ~/noraneko-publish/meta.json | jq '.version' | sed 's/"//g')" >> "$GITHUB_ENV"
-          echo "NR_VERSION=$(cat ~/noraneko-publish/meta.json | jq '.noraneko_version' | sed 's/"//g')" >> "$GITHUB_ENV"
+          echo "VERSION=$(cat ~/noraneko-publish/win/meta.json | jq '.version' | sed 's/\"//g')" >> "$GITHUB_ENV"
+          echo "NR_VERSION=$(cat ~/noraneko-publish/win/meta.json | jq '.noraneko_version' | sed 's/\"//g')" >> "$GITHUB_ENV"
           echo "ROOT_DIR=$(echo ~)" >> "$GITHUB_ENV"
 
       - name: Deploy to GitHub Releases 🚀
@@ -113,10 +113,13 @@ jobs:
         with:
           files: |
             ${{ env.ROOT_DIR }}/noraneko-publish/win/*.mar
+            ${{ env.ROOT_DIR }}/noraneko-publish/win/*.xml
             ${{ env.ROOT_DIR }}/noraneko-publish/win-dist/**
             ${{ env.ROOT_DIR }}/noraneko-publish/linux/*.mar
+            ${{ env.ROOT_DIR }}/noraneko-publish/linux/*.xml
             ${{ env.ROOT_DIR }}/noraneko-publish/linux-dist/**
             ${{ env.ROOT_DIR }}/noraneko-publish/mac/*.mar
+            ${{ env.ROOT_DIR }}/noraneko-publish/mac/*.xml
             ${{ env.ROOT_DIR }}/noraneko-publish/mac-dist/**
           tag_name: "alpha"
           name: "Alpha Release"
