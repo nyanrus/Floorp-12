@@ -6,29 +6,6 @@ name: "(A) |α| Publish Alpha"
 
 on:
   workflow_dispatch:
-    inputs:
-      platform:
-        type: choice
-        required: true
-        default: Windows-x64
-        options:
-          - Windows-x64
-          - Linux-x64
-          - macOS-x64
-      artifact_workflow_run_id:
-        type: string
-        required: false
-        default: ""
-  workflow_call:
-    inputs:
-      platform:
-        type: string
-        required: true
-        default: Windows-x64
-      artifact_workflow_run_id:
-        type: string
-        required: false
-        default: ""
 
 permissions:
   contents: write
@@ -44,37 +21,80 @@ jobs:
         with:
           node-version: 22
 
-      - name: Possibly retrieve run ID if not provided
+      - name: Retrieve run ID for Windows
         run: |
-          if [ -z "${{ inputs.artifact_workflow_run_id }}" ]; then
-            LATEST_ID=$(curl -s \
-              -H "Accept: application/vnd.github+json" \
-              -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-              "https://api.github.com/repos/Floorp-Projects/Floorp-12/actions/workflows/package.yml/runs?branch=main&status=success" \
-            | jq -r --arg platform "${{ inputs.platform }}" '
-              [.workflow_runs[] | select(.display_title | endswith($platform))][0].id
-            ')
-            echo "ARTIFACT_WORKFLOW_RUN_ID=$LATEST_ID" >> $GITHUB_ENV
-          else
-            echo "ARTIFACT_WORKFLOW_RUN_ID=${{ inputs.artifact_workflow_run_id }}" >> $GITHUB_ENV
-          fi
+          WINDOWS_ID=$(curl -s \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/Floorp-Projects/Floorp-12/actions/workflows/package.yml/runs?branch=main&status=success" \
+          | jq -r '[.workflow_runs[] | select(.display_title | endswith("Windows-x64"))][0].id')
+          echo "WINDOWS_RUN_ID=$WINDOWS_ID" >> $GITHUB_ENV
 
-      - name: Set artifact name by platform
+      - name: Retrieve run ID for Linux
         run: |
-          case "${{ inputs.platform }}" in
-            "Windows-x64") ARTIFACT_NAME="noraneko-win-amd64-mar-full" ;;
-            "Linux-x64")   ARTIFACT_NAME="noraneko-linux-amd64-mar-full" ;;
-            "macOS-x64")   ARTIFACT_NAME="noraneko-mac-amd64-mar-full" ;;
-          esac
-          echo "ARTIFACT_NAME=$ARTIFACT_NAME" >> $GITHUB_ENV
+          LINUX_ID=$(curl -s \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/Floorp-Projects/Floorp-12/actions/workflows/package.yml/runs?branch=main&status=success" \
+          | jq -r '[.workflow_runs[] | select(.display_title | endswith("Linux-x64"))][0].id')
+          echo "LINUX_RUN_ID=$LINUX_ID" >> $GITHUB_ENV
 
-      - name: Download artifact
+      - name: Retrieve run ID for macOS
+        run: |
+          MAC_ID=$(curl -s \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/Floorp-Projects/Floorp-12/actions/workflows/package.yml/runs?branch=main&status=success" \
+          | jq -r '[.workflow_runs[] | select(.display_title | endswith("macOS-x64"))][0].id')
+          echo "MAC_RUN_ID=$MAC_ID" >> $GITHUB_ENV
+
+      - name: Download Windows artifact
         uses: actions/download-artifact@v4
         with:
-          name: ${{ env.ARTIFACT_NAME }}
-          run-id: ${{ env.ARTIFACT_WORKFLOW_RUN_ID }}
+          name: noraneko-win-amd64-mar-full
+          run-id: ${{ env.WINDOWS_RUN_ID }}
+          path: ~/noraneko-publish/win
           github-token: ${{ github.token }}
-          path: ~/noraneko-publish
+
+      - name: Download Linux artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: noraneko-linux-amd64-mar-full
+          run-id: ${{ env.LINUX_RUN_ID }}
+          path: ~/noraneko-publish/linux
+          github-token: ${{ github.token }}
+
+      - name: Download macOS artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: noraneko-mac-universal-mar-full
+          run-id: ${{ env.MAC_RUN_ID }}
+          path: ~/noraneko-publish/mac
+          github-token: ${{ github.token }}
+
+      - name: Download Windows installer
+        uses: actions/download-artifact@v4
+        with:
+          name: noraneko-win-amd64-installer
+          run-id: ${{ env.WINDOWS_RUN_ID }}
+          path: ~/noraneko-publish/win-dist
+          github-token: ${{ github.token }}
+
+      - name: Download Linux installer
+        uses: actions/download-artifact@v4
+        with:
+          name: noraneko-linux-amd64-installer
+          run-id: ${{ env.LINUX_RUN_ID }}
+          path: ~/noraneko-publish/linux-dist
+          github-token: ${{ github.token }}
+
+      - name: Download macOS installer
+        uses: actions/download-artifact@v4
+        with:
+          name: noraneko-mac-universal-installer
+          run-id: ${{ env.MAC_RUN_ID }}
+          path: ~/noraneko-publish/mac-dist
+          github-token: ${{ github.token }}
 
       - name: Setup
         run: |
@@ -92,13 +112,15 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            ${{env.ROOT_DIR}}/noraneko-publish/WINNT_x86_64-msvc-x64.update.xml
-            ${{env.ROOT_DIR}}/noraneko-publish/*.mar
-
+            ${{ env.ROOT_DIR }}/noraneko-publish/win/*.mar
+            ${{ env.ROOT_DIR }}/noraneko-publish/win-dist/**
+            ${{ env.ROOT_DIR }}/noraneko-publish/linux/*.mar
+            ${{ env.ROOT_DIR }}/noraneko-publish/linux-dist/**
+            ${{ env.ROOT_DIR }}/noraneko-publish/mac/*.mar
+            ${{ env.ROOT_DIR }}/noraneko-publish/mac-dist/**
           tag_name: "alpha"
           name: "Alpha Release"
-          body: |
-            "Noraneko Alpha: v${{ env.NR_VERSION }} (Firefox v${{ env.VERSION }})"
+          body: "Noraneko Alpha for Windows, Linux, and macOS"
           draft: false
           prerelease: true
           token: ${{ github.token }}
