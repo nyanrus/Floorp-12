@@ -7,13 +7,28 @@ name: "(A) |α| Publish Alpha"
 on:
   workflow_dispatch:
     inputs:
+      platform:
+        type: choice
+        required: true
+        default: Windows-x64
+        options:
+          - Windows-x64
+          - Linux-x64
+          - macOS-x64
       artifact_workflow_run_id:
         type: string
-        required: true
+        required: false
+        default: ""
   workflow_call:
     inputs:
+      platform:
+        type: string
+        required: true
+        default: Windows-x64
       artifact_workflow_run_id:
         type: string
+        required: false
+        default: ""
 
 permissions:
   contents: write
@@ -28,20 +43,37 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Download artifact
-        if: ${{ github.event.inputs.artifact_workflow_run_id }}
-        uses: actions/download-artifact@v4
-        with:
-          name: ${{'noraneko-win-amd64-mar-full'}}
-          run-id: ${{inputs.artifact_workflow_run_id}}
-          github-token: ${{github.token}}
-          path: ~/noraneko-publish
 
-      - name: Try download artifact from same workflow
-        if: ${{ !github.event.inputs.artifact_workflow_run_id }}
+      - name: Possibly retrieve run ID if not provided
+        run: |
+          if [ -z "${{ inputs.artifact_workflow_run_id }}" ]; then
+            LATEST_ID=$(curl -s \
+              -H "Accept: application/vnd.github+json" \
+              -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+              "https://api.github.com/repos/Floorp-Projects/Floorp-12/actions/workflows/package.yml/runs?branch=main&status=success" \
+            | jq -r --arg platform "${{ inputs.platform }}" '
+              [.workflow_runs[] | select(.display_title | endswith($platform))][0].id
+            ')
+            echo "ARTIFACT_WORKFLOW_RUN_ID=$LATEST_ID" >> $GITHUB_ENV
+          else
+            echo "ARTIFACT_WORKFLOW_RUN_ID=${{ inputs.artifact_workflow_run_id }}" >> $GITHUB_ENV
+          fi
+
+      - name: Set artifact name by platform
+        run: |
+          case "${{ inputs.platform }}" in
+            "Windows-x64") ARTIFACT_NAME="noraneko-win-amd64-mar-full" ;;
+            "Linux-x64")   ARTIFACT_NAME="noraneko-linux-amd64-mar-full" ;;
+            "macOS-x64")   ARTIFACT_NAME="noraneko-mac-amd64-mar-full" ;;
+          esac
+          echo "ARTIFACT_NAME=$ARTIFACT_NAME" >> $GITHUB_ENV
+
+      - name: Download artifact
         uses: actions/download-artifact@v4
         with:
-          name: ${{'noraneko-win-amd64-mar-full'}}
+          name: ${{ env.ARTIFACT_NAME }}
+          run-id: ${{ env.ARTIFACT_WORKFLOW_RUN_ID }}
+          github-token: ${{ github.token }}
           path: ~/noraneko-publish
 
       - name: Setup
@@ -70,6 +102,7 @@ jobs:
           draft: false
           prerelease: true
           token: ${{ github.token }}
+
       - name: Publish Package 🎁
         uses: actions/upload-artifact@v4
         with:
