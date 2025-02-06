@@ -151,14 +151,20 @@ jobs:
             "Windows-x64")
               echo "ARTIFACT_NAME=floorp-win-amd64-moz-artifact" >> $GITHUB_ENV
               echo "OUTPUT_NAME=win-amd64" >> $GITHUB_ENV
+              echo "INSTALLER_PATH=install/sea/*installer.exe" >> $GITHUB_ENV
+              echo "OUTPUT_INSTALLER_NAME=floorp-win64-installer.exe" >> $GITHUB_ENV
               ;;
             "Linux-x64")
               echo "ARTIFACT_NAME=floorp-linux-amd64-moz-artifact-release" >> $GITHUB_ENV
               echo "OUTPUT_NAME=linux-amd64" >> $GITHUB_ENV
+              echo "INSTALLER_PATH=floorp*tar.xz" >> $GITHUB_ENV
+              echo "OUTPUT_INSTALLER_NAME=floorp-linux-amd64.tar.xz" >> $GITHUB_ENV
               ;;
             "macOS-x64")
               echo "ARTIFACT_NAME=floorp-mac-universal-moz-artifact-release" >> $GITHUB_ENV
               echo "OUTPUT_NAME=mac-universal" >> $GITHUB_ENV
+              echo "INSTALLER_PATH=floorp-*dmg" >> $GITHUB_ENV
+              echo "OUTPUT_INSTALLER_NAME=floorp-macOS-universal.dmg" >> $GITHUB_ENV
               ;;
             esac
 
@@ -216,6 +222,11 @@ jobs:
         run: |
           ./mach package
 
+      - name: Rename and move installer
+        run: |
+          mkdir -p ~/noraneko-installer
+          mv obj-*/dist/$INSTALLER_PATH ~/noraneko-installer/$OUTPUT_INSTALLER_NAME
+
       - name: Download artifact of MAR tools
         uses: actions/download-artifact@v4
         with:
@@ -271,7 +282,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: noraneko-${{ env.OUTPUT_NAME }}-installer
-          path: obj-*/dist/
+          path: ~/noraneko-installer/*
           compression-level: 9
 
       - name: Publish MAR 🎁
