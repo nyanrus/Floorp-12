@@ -94,10 +94,7 @@ async function decompressBin() {
       await fs.mkdir(mountDir, { recursive: true });
       await $`hdiutil ${["attach", "-mountpoint", mountDir, binArchive]}`;
       await fs.mkdir(binDir, { recursive: true });
-      await fs.cp(
-        pathe.join(mountDir, `${brandingName}.app`),
-        pathe.join(`./_dist/bin/${brandingBaseName}`, ""),
-      );
+      await fs.cp(pathe.join(mountDir, `${brandingName}.app`), pathe.join(`./_dist/bin/${brandingBaseName}`, `${brandingName}.app`), { recursive: true });
       await fs.writeFile(binVersion, VERSION);
       await $`hdiutil ${["detach", mountDir]}`;
       await fs.rm(mountDir, { recursive: true });
