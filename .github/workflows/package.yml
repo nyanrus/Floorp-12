@@ -230,20 +230,22 @@ jobs:
       - name: Download artifact of MAR tools
         uses: actions/download-artifact@v4
         with:
-          name: ${{'dist-host'}}
+          pattern: '*dist-host'
           run-id: ${{ env.RUNTIME_ARTIFACT_WORKFLOW_RUN_ID }}
           github-token: ${{github.token}}
           repository: Floorp-Projects/Floorp-12-runtime
           path: obj-artifact-build-output/dist/host
+          merge-multiple: true
 
       - name: Download artifact of binary for getting build information
         uses: actions/download-artifact@v4
         with:
-          name: application-ini
+          pattern: '*application-ini'
           run-id: ${{ env.RUNTIME_ARTIFACT_WORKFLOW_RUN_ID }}
           github-token: ${{github.token}}
           repository: Floorp-Projects/Floorp-12-runtime
           path: ~/noraneko-dev
+          merge-multiple: true
 
       - name: Create MAR package
         run: |
