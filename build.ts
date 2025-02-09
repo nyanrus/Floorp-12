@@ -90,7 +90,7 @@ async function decompressBin() {
         "attach",
         "-mountpoint",
         mountDir,
-        `_dist/dmgTemp/${brandingBaseName}-macOS-universal-moz-artifact.dmg`,
+        `_dist/dmgTemp/${brandingBaseName}-macOS-universal-moz-artifact-dev.dmg`,
       ]);
       await fs.mkdir(binDir, { recursive: true });
       await execa("cp", ["-R", path.join(mountDir, `${brandingName}.app`), path.join(`./_dist/bin/${brandingBaseName}`, "")]);
