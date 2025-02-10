@@ -68,6 +68,7 @@ let logStatusForFollowingLine: "error" | "warn" | "info" | "debug" = "info";
   }
 
 import {LogEntry, log} from 'zx/core'
+import { brandingBaseName, brandingName } from "../../build";
 
 $.log = (entry: LogEntry) => {
   // if the buffer is null, the process is on exit.
@@ -106,17 +107,16 @@ export async function runBrowser(port = 5180) {
   // https://wiki.mozilla.org/Firefox/CommandLineOptions
   switch (process.platform) {
     case "win32":
-      processBrowser = $`./_dist/bin/noraneko/noraneko.exe --profile ./_dist/profile/test --remote-debugging-port ${port} --wait-for-browser --jsdebugger`.stdio("pipe");
+      processBrowser = $`./_dist/bin/${brandingBaseName}/${brandingBaseName}.exe --profile ./_dist/profile/test --remote-debugging-port ${port} --wait-for-browser --jsdebugger`.stdio("pipe");
       break;
 
     case "linux":
-      processBrowser = $`./_dist/bin/noraneko/noraneko --profile ./_dist/profile/test --remote-debugging-port ${port} --wait-for-browser --jsdebugger`.stdio("pipe");
+      processBrowser = $`./_dist/bin/${brandingBaseName}/${brandingBaseName} --profile ./_dist/profile/test --remote-debugging-port ${port} --wait-for-browser --jsdebugger`.stdio("pipe");
       break;
 
     case "darwin":
-      processBrowser = $`./_dist/bin/noraneko/Noraneko.app/Contents/MacOS/noraneko --profile ./_dist/profile/test --remote-debugging-port ${port} --wait-for-browser --jsdebugger`.stdio("pipe")
+      processBrowser = $`./_dist/bin/${brandingBaseName}/${brandingName}.app/Contents/MacOS/${brandingBaseName} --profile ./_dist/profile/test --remote-debugging-port ${port} --wait-for-browser --jsdebugger`.stdio("pipe");
       break;
-  } processBrowser = $`./_dist/bin/noraneko/noraneko.exe --profile ./_dist/profile/test --remote-debugging-port ${port} --wait-for-browser --jsdebugger`.stdio("pipe");
   }
 
   //processBrowser = $`${binPath()} --profile ./_dist/profile/test --remote-debugging-port ${port} --wait-for-browser --jsdebugger`;

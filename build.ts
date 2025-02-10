@@ -21,8 +21,8 @@ switch (process.platform) {
 }
 
 //? branding
-const brandingBaseName = "floorp";
-const brandingName = "Floorp";
+export const brandingBaseName = "floorp";
+export const brandingName = "Floorp";
 
 //? when the linux binary has published, I'll sync linux bin version
 const VERSION = process.platform === "win32" ? "001" : "000";
