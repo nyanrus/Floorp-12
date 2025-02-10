@@ -1,5 +1,5 @@
 import * as fs from "node:fs/promises";
-import * as pathe from "pathe";
+import * as pathe from "pathe"
 import { injectManifest } from "./scripts/inject/manifest";
 import { injectXHTML, injectXHTMLDev } from "./scripts/inject/xhtml";
 import { applyMixin } from "./scripts/inject/mixin-loader";
@@ -174,22 +174,15 @@ async function run(mode: "dev" | "test" | "release" = "dev") {
   if (mode !== "release") {
     if (!devInit) {
       console.log("run dev servers");
-      devViteProcess =
-        $`node --import @swc-node/register/esm-register ./scripts/launchDev/child-dev.ts ${mode} ${buildid2 ?? ""}`
-          .stdio("pipe")
-          .nothrow();
+      devViteProcess = $`node --import @swc-node/register/esm-register ./scripts/launchDev/child-dev.ts ${mode} ${buildid2 ?? ""}`.stdio("pipe").nothrow();
 
-      (async () => {
-        for await (const temp of devViteProcess.stdout) {
-          process.stdout.write(temp);
-        }
-      })();
-      (async () => {
-        for await (const temp of devViteProcess.stderr) {
-          process.stdout.write(temp);
-        }
-      })();
-      await $`node --import @swc-node/register/esm-register ./scripts/launchDev/child-build.ts ${mode} ${buildid2 ?? ""}`;
+      (async () => {for await (const temp of devViteProcess.stdout) {
+        process.stdout.write(temp)
+      }})();
+      (async () => {for await (const temp of devViteProcess.stderr) {
+        process.stdout.write(temp)
+      }})();
+      await $`node --import @swc-node/register/esm-register ./scripts/launchDev/child-build.ts ${mode} ${buildid2 ?? ""}`
 
       // env
       if (process.platform === "darwin") {
@@ -239,54 +232,47 @@ async function run(mode: "dev" | "test" | "release" = "dev") {
   await fs.mkdir("./_dist/profile/test", { recursive: true });
   await savePrefsForProfile("./_dist/profile/test");
 
-  browserProcess =
-    $`node --import @swc-node/register/esm-register ./scripts/launchDev/child-browser.ts`
-      .stdio("pipe")
-      .nothrow();
+  browserProcess = $`node --import @swc-node/register/esm-register ./scripts/launchDev/child-browser.ts`.stdio("pipe").nothrow();
 
-  (async () => {
-    for await (const temp of browserProcess.stdout) {
-      process.stdout.write(temp);
-    }
-  })();
-  (async () => {
-    for await (const temp of browserProcess.stderr) {
-      process.stdout.write(temp);
-    }
-  })();
+  (async () => {for await (const temp of browserProcess.stdout) {
+    process.stdout.write(temp)
+  }})();
+  (async () => {for await (const temp of browserProcess.stderr) {
+    process.stdout.write(temp)
+  }})();
 }
 
-let runningExit = false;
+let runningExit = false
 async function exit() {
   if (runningExit) return;
   runningExit = true;
   if (browserProcess) {
-    console.log("[build] Start Shutdown browserProcess");
-    browserProcess.stdin.write("s");
+    console.log("[build] Start Shutdown browserProcess")
+    browserProcess.stdin.write("s")
     try {
-      await browserProcess;
-    } catch (e) {
-      console.error(e);
+      await browserProcess
+    } catch (e){
+      console.error(e)
     }
-    console.log("[build] End Shutdown browserProcess");
+    console.log("[build] End Shutdown browserProcess")
   }
   if (devViteProcess) {
-    console.log("[build] Start Shutdown devViteProcess");
-    devViteProcess.stdin.write("s");
+    console.log("[build] Start Shutdown devViteProcess")
+    devViteProcess.stdin.write("s")
     try {
-      await devViteProcess;
-    } catch (e) {
-      console.error(e);
+      await devViteProcess
+    } catch (e){
+      console.error(e)
     }
-    console.log("[build] End Shutdown devViteProcess");
+    console.log("[build] End Shutdown devViteProcess")
   }
-  console.log(chalk.green("[build] Cleanup Complete!"));
-  process.exit(0);
+  console.log(chalk.green("[build] Cleanup Complete!"))
+  process.exit(0)
 }
 
-process.on("SIGINT", async () => {
-  await exit();
-});
+process.on("SIGINT",async ()=>{
+  await exit()
+})
 
 /**
  * * Please run with NODE_ENV='production'
@@ -300,7 +286,7 @@ async function release(mode: "before" | "after") {
   } catch {}
   console.log(`[build] buildid2: ${buildid2}`);
   if (mode === "before") {
-    await $`node --import @swc-node/register/esm-register ./scripts/launchDev/child-build.ts production ${buildid2 ?? ""}`;
+    await $`node --import @swc-node/register/esm-register ./scripts/launchDev/child-build.ts production ${buildid2 ?? ""}`
     await injectManifest("./_dist", false);
   } else if (mode === "after") {
     const binPath = "../obj-artifact-build-output/dist/bin";
