@@ -49,12 +49,12 @@ const getBinArchive = async () => {
     return `${brandingBaseName}-win-amd64-moz-artifact.zip`;
   } else if (process.platform === "linux") {
     if (arch === "x64") {
-      return `${brandingBaseName}-linux-amd64-moz-artifact-dev.zip`;
+      return `${brandingBaseName}-linux-amd64-moz-artifact.tar.xz`;
     } else if (arch === "arm64") {
-      return `${brandingBaseName}-linux-arm64-moz-artifact-dev.zip`;
+      return `${brandingBaseName}-linux-arm64-moz-artifact.tar.xz`;
     }
   } else if (process.platform === "darwin") {
-    return `${brandingBaseName}-mac-universal-moz-artifact-dev.zip`;
+    return `${brandingBaseName}-macOS-universal-moz-artifact.dmg`;
   }
   throw new Error("Unsupported platform/architecture");
 };
