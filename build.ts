@@ -27,10 +27,8 @@ export const brandingName = "Floorp";
 //? when the linux binary has published, I'll sync linux bin version
 const VERSION = process.platform === "win32" ? "001" : "000";
 const binExtractDir = "_dist/bin";
-const binDir =
-  process.platform !== "darwin"
-    ? `_dist/bin/${brandingBaseName}`
-    : `_dist/bin/${brandingBaseName}/${brandingName}.app/Contents/Resources`;
+const binDir = process.platform !== "darwin" ? `_dist/bin/${brandingBaseName}`
+  : `_dist/bin/${brandingBaseName}/${brandingName}.app/Contents/Resources`;
 
 const r = (dir: string) => {
   return pathe.resolve(import.meta.dirname, dir);
