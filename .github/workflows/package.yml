@@ -212,9 +212,9 @@ jobs:
           if [ "${{inputs.platform}}" == "Windows-x64" ]; then
             MOZ_ARTIFACT_FILE=$(echo ~/artifacts/floorp-win-amd64-moz-artifact.zip) ./mach build
           elif [ "${{inputs.platform}}" == "Linux-x64" ]; then
-            MOZ_ARTIFACT_FILE=$(echo ~/artifacts/floorp-linux-amd64-moz-artifact-release.tar.xz) ./mach build
+            MOZ_ARTIFACT_FILE=$(echo ~/artifacts/floorp-linux-amd64-moz-artifact.tar.xz) ./mach build
           elif [ "${{inputs.platform}}" == "macOS-x64" ]; then
-            MOZ_ARTIFACT_FILE="$(echo ~/artifacts/floorp-macOS-universal-moz-artifact-release.dmg):$(echo ~/artifacts/floorp-macOS.update_framework_artifacts.zip)" ./mach build
+            MOZ_ARTIFACT_FILE="$(echo ~/artifacts/floorp-macOS-universal-moz-artifact.dmg):$(echo ~/artifacts/floorp-macOS.update_framework_artifacts.zip)" ./mach build
           fi
 
       - name: Inject Floorp
@@ -253,7 +253,7 @@ jobs:
       - name: Download artifact of MAR tools (GitHub Releases)
         if: ${{ env.RUNTIME_ARTIFACT_WORKFLOW_RUN_ID == 'false' }}
         run: |
-          curl -L https://github.com/Floorp-Projects/Floorp-12-runtime/releases/latest/download/${{ inputs.platform }}-dist-host.zip -o ~/downloads/${{ env.ARTIFACT_FROM_RELEASE_NAME }}
+          curl -L https://github.com/Floorp-Projects/Floorp-12-runtime/releases/latest/download/${{ inputs.platform }}-dist-host.zip -o ~/downloads/${{ inputs.platform }}-dist-host.zip
           unzip ~/downloads/${{ inputs.platform }}-dist-host.zip -d ./obj-artifact-build-output/dist/host
 
       - name: Download artifact of binary for getting build information (Actions)
@@ -270,7 +270,7 @@ jobs:
       - name: Download artifact of binary for getting build information (GiHub Releases)
         if: ${{ env.RUNTIME_ARTIFACT_WORKFLOW_RUN_ID == 'false' }}
         run: |
-          curl -L https://github.com/Floorp-Projects/Floorp-12-runtime/releases/latest/download/${{ inputs.platform }}-application-ini.zip -o ~/downloads/${{ env.ARTIFACT_FROM_RELEASE_NAME }}
+          curl -L https://github.com/Floorp-Projects/Floorp-12-runtime/releases/latest/download/${{ inputs.platform }}-application-ini.zip -o ~/downloads/${{ inputs.platform }}-application-ini.zip
           unzip ~/downloads/${{ inputs.platform }}-application-ini.zip -d ~/noraneko-dev
 
       - name: Create MAR package
