@@ -105,15 +105,16 @@ jobs:
           sed -i 's|ac_add_options --enable-unverified-updates||g' ./mozconfig
 
           echo "ac_add_options --enable-release" >> mozconfig
-          echo "ac_add_options --enable-update-channel=alpha" >> mozconfig
           echo "ac_add_options --disable-tests" >> mozconfig
           echo "ac_add_options --enable-artifact-builds" >> mozconfig
           echo "mk_add_options MOZ_OBJDIR=./obj-artifact-build-output" >> mozconfig
 
           if [ "${{inputs.beta}}" == "true" ]; then
             echo "ac_add_options --with-branding=browser/branding/floorp-daylight" >> mozconfig
+            echo "ac_add_options --enable-update-channel=beta" >> mozconfig
           else
             echo "ac_add_options --with-branding=browser/branding/floorp-official" >> mozconfig
+            echo "ac_add_options --enable-update-channel=stable" >> mozconfig
           fi
 
           sed -i 's|ac_add_options --enable-chrome-format=flat||g' ./mozconfig
