@@ -111,9 +111,9 @@ jobs:
           echo "mk_add_options MOZ_OBJDIR=./obj-artifact-build-output" >> mozconfig
 
           if [ "${{inputs.beta}}" == "true" ]; then
-            sed -i 's|MOZ_BRANDING_DIRECTORY=browser/branding/unofficial|MOZ_BRANDING_DIRECTORY=browser/branding/floorp-daylight|g' ./browser/confvars.sh
+            echo "ac_add_options --with-branding=browser/branding/floorp-daylight" >> mozconfig
           else
-            sed -i 's|MOZ_BRANDING_DIRECTORY=browser/branding/unofficial|MOZ_BRANDING_DIRECTORY=browser/branding/floorp-official|g' ./browser/confvars.sh
+            echo "ac_add_options --with-branding=browser/branding/floorp-official" >> mozconfig
           fi
 
           sed -i 's|ac_add_options --enable-chrome-format=flat||g' ./mozconfig
