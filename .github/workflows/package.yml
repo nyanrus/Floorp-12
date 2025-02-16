@@ -231,6 +231,11 @@ jobs:
             MOZ_ARTIFACT_FILE="$(echo ~/artifacts/floorp-macOS-universal-moz-artifact.dmg):$(echo ~/artifacts/floorp-macOS.update_framework_artifacts.zip)" ./mach build
           fi
 
+          if [ "${{inputs.beta}}" == "true" ]; then
+            sed -i 's|ac_add_options --enable-artifact-builds||g' ./mozconfig
+            ./mach build
+          fi
+
       - name: Inject Floorp
         run: |
           cd ./floorp
