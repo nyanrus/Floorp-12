@@ -1,5 +1,8 @@
-name: "(A) |α| Package and Publish Alpha"
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+name: "(B) 📅 Daily Build with auto-update"
 on:
   workflow_dispatch:
     inputs:
@@ -24,6 +27,7 @@ jobs:
     with:
       platform: Windows-x64
       runtime_artifact_workflow_run_id: ${{ inputs.runtime_windows_artifact_workflow_run_id }}
+      beta: true
     secrets: inherit
 
   package-linux:
@@ -31,6 +35,7 @@ jobs:
     with:
       platform: Linux-x64
       runtime_artifact_workflow_run_id: ${{ inputs.runtime_linux_artifact_workflow_run_id }}
+      beta: true
     secrets: inherit
 
   package-macos:
@@ -38,6 +43,7 @@ jobs:
     with:
       platform: macOS-x64
       runtime_artifact_workflow_run_id: ${{ inputs.runtime_mac_artifact_workflow_run_id }}
+      beta: true
     secrets: inherit
 
   publishs:
