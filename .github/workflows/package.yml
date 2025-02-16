@@ -105,15 +105,16 @@ jobs:
           sed -i 's|ac_add_options --enable-unverified-updates||g' ./mozconfig
 
           echo "ac_add_options --enable-release" >> mozconfig
-          echo "ac_add_options --enable-update-channel=alpha" >> mozconfig
           echo "ac_add_options --disable-tests" >> mozconfig
           echo "ac_add_options --enable-artifact-builds" >> mozconfig
           echo "mk_add_options MOZ_OBJDIR=./obj-artifact-build-output" >> mozconfig
 
           if [ "${{inputs.beta}}" == "true" ]; then
-            sed -i 's|MOZ_BRANDING_DIRECTORY=browser/branding/unofficial|MOZ_BRANDING_DIRECTORY=browser/branding/floorp-daylight|g' ./browser/confvars.sh
+            echo "ac_add_options --with-branding=browser/branding/floorp-daylight" >> mozconfig
+            echo "ac_add_options --enable-update-channel=beta" >> mozconfig
           else
-            sed -i 's|MOZ_BRANDING_DIRECTORY=browser/branding/unofficial|MOZ_BRANDING_DIRECTORY=browser/branding/floorp-official|g' ./browser/confvars.sh
+            echo "ac_add_options --with-branding=browser/branding/floorp-official" >> mozconfig
+            echo "ac_add_options --enable-update-channel=stable" >> mozconfig
           fi
 
           sed -i 's|ac_add_options --enable-chrome-format=flat||g' ./mozconfig
@@ -228,6 +229,11 @@ jobs:
             MOZ_ARTIFACT_FILE=$(echo ~/artifacts/floorp-linux-amd64-moz-artifact.tar.xz) ./mach build
           elif [ "${{inputs.platform}}" == "macOS-x64" ]; then
             MOZ_ARTIFACT_FILE="$(echo ~/artifacts/floorp-macOS-universal-moz-artifact.dmg):$(echo ~/artifacts/floorp-macOS.update_framework_artifacts.zip)" ./mach build
+          fi
+
+          if [ "${{inputs.beta}}" == "true" ]; then
+            sed -i 's|ac_add_options --enable-artifact-builds||g' ./mozconfig
+            ./mach build
           fi
 
       - name: Inject Floorp
