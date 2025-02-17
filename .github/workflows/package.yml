@@ -47,7 +47,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          repository: Floorp-Projects/Floorp-12-runtime
+          repository: nyanrus/Floorp-12-runtime
           submodules: "recursive"
 
       - uses: actions/checkout@v4
@@ -180,7 +180,7 @@ jobs:
           name: ${{ env.ARTIFACT_NAME }}
           run-id: ${{ env.RUNTIME_ARTIFACT_WORKFLOW_RUN_ID }}
           github-token: ${{github.token}}
-          repository: Floorp-Projects/Floorp-12-runtime
+          repository: nyanrus/Floorp-12-runtime
           path: ~/downloads
 
       - name: Download Mozilla Artifact from GitHub Releases
@@ -265,7 +265,7 @@ jobs:
           pattern: '*dist-host'
           run-id: ${{ env.RUNTIME_ARTIFACT_WORKFLOW_RUN_ID }}
           github-token: ${{github.token}}
-          repository: Floorp-Projects/Floorp-12-runtime
+          repository: nyanrus/Floorp-12-runtime
           path: obj-artifact-build-output/dist/host
           merge-multiple: true
 
@@ -282,7 +282,7 @@ jobs:
           pattern: '*application-ini'
           run-id: ${{ env.RUNTIME_ARTIFACT_WORKFLOW_RUN_ID }}
           github-token: ${{github.token}}
-          repository: Floorp-Projects/Floorp-12-runtime
+          repository: nyanrus/Floorp-12-runtime
           path: ~/noraneko-dev
           merge-multiple: true
 
